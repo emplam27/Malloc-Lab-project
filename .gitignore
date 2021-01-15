@@ -1,11 +1,9 @@
 
-<<<<<<< HEAD
 # Created by https://www.toptal.com/developers/gitignore/api/linux,vscode,cmake
 # Edit at https://www.toptal.com/developers/gitignore?templates=linux,vscode,cmake
-=======
-# Created by https://www.toptal.com/developers/gitignore/api/linux,cmake,vscode,vim
-# Edit at https://www.toptal.com/developers/gitignore?templates=linux,cmake,vscode,vim
->>>>>>> 1dc38ba279cb635b52130c1fa23e905b5769e539
+
+*.o
+mdriver
 
 ### CMake ###
 CMakeLists.txt.user
