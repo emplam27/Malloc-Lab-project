@@ -1,6 +1,11 @@
 
+<<<<<<< HEAD
 # Created by https://www.toptal.com/developers/gitignore/api/linux,vscode,cmake
 # Edit at https://www.toptal.com/developers/gitignore?templates=linux,vscode,cmake
+=======
+# Created by https://www.toptal.com/developers/gitignore/api/linux,cmake,vscode,vim
+# Edit at https://www.toptal.com/developers/gitignore?templates=linux,cmake,vscode,vim
+>>>>>>> 1dc38ba279cb635b52130c1fa23e905b5769e539
 
 ### CMake ###
 CMakeLists.txt.user
@@ -34,6 +39,26 @@ CMakeUserPresets.json
 
 # .nfs files are created when an open file is removed but is still being accessed
 .nfs*
+
+### Vim ###
+# Swap
+[._]*.s[a-v][a-z]
+!*.svg  # comment out if you don't need vector files
+[._]*.sw[a-p]
+[._]s[a-rt-v][a-z]
+[._]ss[a-gi-z]
+[._]sw[a-p]
+
+# Session
+Session.vim
+Sessionx.vim
+
+# Temporary
+.netrwhist
+# Auto-generated tag files
+tags
+# Persistent undo
+[._]*.un~
 
 ### vscode ###
 .vscode/*
