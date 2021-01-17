@@ -162,6 +162,10 @@ void mm_free(void *bp)
  */
 void *mm_realloc(void *ptr, size_t size)
 {
+    if (size == 0) {
+        mm_free(ptr);
+        return NULL;
+    }
     void *oldptr = ptr;
     void *newptr;
     size_t copySize;
@@ -350,24 +354,30 @@ static void place(void* bp, size_t asize)
     else {
         // printf("place unsame size\n");
         // printf("\n");
-        void *old_bp, *new_bp;
-        size_t old_size, remain_size;
+        size_t old_size = GET_SIZE(HDRP(bp));
+        size_t new_size = old_size - asize;
+        PUT(HDRP(bp), PACK(asize, 1));
+        PUT(FTRP(bp), PACK(asize, 1));
+        PUT(HDRP(NEXT_BLKP(bp)), PACK(new_size, 0));
+        PUT(FTRP(NEXT_BLKP(bp)), PACK(new_size, 0));
+        // void *old_bp, *new_bp;
+        // size_t old_size, remain_size;
 
-        old_size = GET_SIZE(HDRP(bp));
-        remain_size = old_size - asize;
+        // old_size = GET_SIZE(HDRP(bp));
+        // remain_size = old_size - asize;
 
-        old_bp = bp;
-        new_bp = old_bp + asize;
+        // old_bp = bp;
+        // new_bp = old_bp + asize;
 
-        void* old_header = HDRP(old_bp);
-        void* old_footer = FTRP(old_bp);
-        PUT(old_header, PACK(asize, 1)); // old_header
-        PUT(old_footer, PACK(remain_size, 0)); // old_footer
+        // void* old_header = HDRP(old_bp);
+        // void* old_footer = FTRP(old_bp);
+        // PUT(old_header, PACK(asize, 1)); // old_header
+        // PUT(old_footer, PACK(remain_size, 0)); // old_footer
 
-        void* new_header = HDRP(new_bp);
-        void* new_footer = FTRP(old_bp);
-        PUT(new_header, PACK(remain_size, 0)); // new_header
-        PUT(new_footer, PACK(asize, 1)); // new_footer
+        // void* new_header = HDRP(new_bp);
+        // void* new_footer = FTRP(old_bp);
+        // PUT(new_header, PACK(remain_size, 0)); // new_header
+        // PUT(new_footer, PACK(asize, 1)); // new_footer
 
         // printf("old_header : %p\n", old_header);
         // printf("GET_ALLOC(old_header) : %d\n", GET_ALLOC(old_header));

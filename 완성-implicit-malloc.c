@@ -9,11 +9,11 @@
 
 team_t team = {
     /* Team name */
-    "",
+    "1",
     /* First member's full name */
-    "",
+    "emplam27",
     /* First member's email address */
-    "",
+    "emplam27@gmail.com",
     /* Second member's full name (leave blank if none) */
     "",
     /* Second member's email address (leave blank if none) */
@@ -259,23 +259,11 @@ static void place(void* bp, size_t asize)
      * FTRP(old_bp)에 old_size - asize, alloc 0 설정
      */
     else {
-        void *old_bp, *new_bp;
-        size_t old_size, remain_size;
-
-        old_size = GET_SIZE(HDRP(bp));
-        remain_size = old_size - asize;
-
-        old_bp = bp;
-        new_bp = old_bp + asize;
-
-        void* old_header = HDRP(old_bp);
-        void* old_footer = FTRP(old_bp);
-        PUT(old_header, PACK(asize, 1)); // old_header
-        PUT(old_footer, PACK(remain_size, 0)); // old_footer
-
-        void* new_header = HDRP(new_bp);
-        void* new_footer = FTRP(old_bp);
-        PUT(new_header, PACK(remain_size, 0)); // new_header
-        PUT(new_footer, PACK(asize, 1)); // new_footer
+        size_t old_size = GET_SIZE(HDRP(bp));
+        size_t new_size = old_size - asize;
+        PUT(HDRP(bp), PACK(asize, 1)); // old_header
+        PUT(FTRP(bp), PACK(asize, 1)); // new_footer
+        PUT(HDRP(NEXT_BLKP(bp)), PACK(new_size, 0)); // new_header
+        PUT(FTRP(NEXT_BLKP(bp)), PACK(new_size, 0)); // old_footer
     }
 }
