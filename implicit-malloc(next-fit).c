@@ -20,9 +20,9 @@ team_t team = {
     ""
 };
 
-#define WSIZE 4             // word, header, footer 사이즈(byte)
-#define DSIZE 8             // double word 사이즈(byte)
-#define CHUNKSIZE (1<<12)   // heap 확장 사이즈(byte)
+#define WSIZE     sizeof(void *)    // word, header, footer 사이즈(byte)
+#define DSIZE     (2 * WSIZE)       // double word 사이즈(byte)
+#define CHUNKSIZE (1<<12)           // heap 확장 사이즈(byte)
 
 #define MAX(x, y) ((x) > (y) ? (x) : (y))
 
@@ -41,10 +41,12 @@ team_t team = {
 #define PREV_BLKP(bp) ((char *)(bp) - GET_SIZE(((char *)(bp) - DSIZE))) // 이전 block의 block pointer로 이동하기
 
 static void *extend_heap(size_t words);
-static void *coalesce(void* bp);
-static void* find_fit(size_t asize);
-static void place(void* bp, size_t asize);
+static void *coalesce(void *bp);
+static void *next_fit(size_t adjust_size);
+static void place(void *bp, size_t adjust_size);
 static char *heap_listp; // 힙의 시작점을 나타내는 포인터
+static char* last_bp; // 마지막에 검사한 블록의 포인터
+
 
 /* 
  * mm_init - 할당을 수행할 힙 영역을 만들어줌
@@ -105,7 +107,7 @@ void *mm_malloc(size_t size)
     }
     
     // 사이즈에 맞는 위치 탐색
-    if ((bp = find_fit(adjust_size)) != NULL) {
+    if ((bp = next_fit(adjust_size)) != NULL) {
         place(bp, adjust_size);
         return bp;
     }
@@ -177,7 +179,7 @@ static void *extend_heap(size_t words)
     return coalesce(bp);
 }
 
-static void *coalesce(void* bp)
+static void *coalesce(void *bp)
 {
     size_t prev_alloc = GET_ALLOC(FTRP(PREV_BLKP(bp)));
     size_t next_alloc = GET_ALLOC(HDRP(NEXT_BLKP(bp)));
@@ -185,6 +187,7 @@ static void *coalesce(void* bp)
 
     // free한 block 앞, 뒤에 모두 할당 되어있는 block이 있는 경우
     if (prev_alloc && next_alloc) {
+        last_bp = bp;
         return bp;
     }
 
@@ -210,10 +213,11 @@ static void *coalesce(void* bp)
         PUT(FTRP(NEXT_BLKP(bp)), PACK(size, 0));
         bp = PREV_BLKP(bp);
     }
+    last_bp = bp;
     return bp;
 }
 
-static void* find_fit(size_t asize) 
+static void *find_fit(size_t adjust_size) 
 {
     size_t curr_alloc;
     size_t curr_size;
@@ -233,36 +237,61 @@ static void* find_fit(size_t asize)
             curr_bp = NEXT_BLKP(curr_bp);
             continue;
         }
-        // 현재 포인터의 block이 할당되어있지 않고, 사이즈가 asize보다 작다면 뒤로 이동
-        if (!curr_alloc && (curr_size < asize)) {
+        // 현재 포인터의 block이 할당되어있지 않고, 사이즈가 adjust_size보다 작다면 뒤로 이동
+        if (!curr_alloc && (curr_size < adjust_size)) {
             curr_bp = NEXT_BLKP(curr_bp);
             continue;
         }
-        // 현재 포인터의 block이 할당되어있지 않고, 사이즈가 asize보다 크다면 현재 위치 반환
+        // 현재 포인터의 block이 할당되어있지 않고, 사이즈가 adjust_size보다 크다면 현재 위치 반환
         return curr_bp;
     }
 }
 
-static void place(void* bp, size_t asize) 
+static void* next_fit(size_t adjust_size)
+{
+    char* bp = last_bp;
+    while (GET_SIZE(HDRP(bp))!=0) {
+        bp = NEXT_BLKP(bp);
+        if (GET_ALLOC(HDRP(bp)) == 0 && GET_SIZE(HDRP(bp)) >= adjust_size)
+        {
+            last_bp = bp;
+            return bp;
+        }
+    }
+
+    bp = heap_listp;
+    while (bp < last_bp)
+    {
+        bp = NEXT_BLKP(bp);
+        if (GET_ALLOC(HDRP(bp)) == 0 && GET_SIZE(HDRP(bp)) >= adjust_size)
+        {
+            last_bp = bp;
+            return bp;
+        }
+    }
+    return NULL ;
+}
+
+static void place(void *bp, size_t adjust_size) 
 {
     // 만일 할당 하려는 사이즈와 공간의 사이즈가 같다면 header, footer의 alloc만 변환
-    if (GET_SIZE(HDRP(bp)) == asize) {
-        PUT(HDRP(bp), PACK(asize, 1));
-        PUT(FTRP(bp), PACK(asize, 1));
+    if (GET_SIZE(HDRP(bp)) == adjust_size) {
+        PUT(HDRP(bp), PACK(adjust_size, 1));
+        PUT(FTRP(bp), PACK(adjust_size, 1));
     }
 
     /* 
-     * 만일 asize보다 공간의 사이즈가 크다면,
-     * HDRP(old_bp)에 asize, alloc 1 설정
-     * FTRP(new_bp)에 asize, alloc 1 설정
-     * HDRP(new_bp)에 old_size - asize, alloc 0 설정
-     * FTRP(old_bp)에 old_size - asize, alloc 0 설정
+     * 만일 adjust_size보다 공간의 사이즈가 크다면,
+     * HDRP(old_bp)에 adjust_size, alloc 1 설정
+     * FTRP(new_bp)에 adjust_size, alloc 1 설정
+     * HDRP(new_bp)에 old_size - adjust_size, alloc 0 설정
+     * FTRP(old_bp)에 old_size - adjust_size, alloc 0 설정
      */
     else {
         size_t old_size = GET_SIZE(HDRP(bp));
-        size_t new_size = old_size - asize;
-        PUT(HDRP(bp), PACK(asize, 1)); // old_header
-        PUT(FTRP(bp), PACK(asize, 1)); // new_footer
+        size_t new_size = old_size - adjust_size;
+        PUT(HDRP(bp), PACK(adjust_size, 1)); // old_header
+        PUT(FTRP(bp), PACK(adjust_size, 1)); // new_footer
         PUT(HDRP(NEXT_BLKP(bp)), PACK(new_size, 0)); // new_header
         PUT(FTRP(NEXT_BLKP(bp)), PACK(new_size, 0)); // old_footer
     }
