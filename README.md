@@ -23,5 +23,3 @@ cd Malloc-Lab-project/malloc-mdriver
 # mm.c 파일내용을 explicit-malloc.c, implicit-malloc(first-fit).c, implicit-malloc(next-fit).c로 수정
 make re
 ```
-
-### 
